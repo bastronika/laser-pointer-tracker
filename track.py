@@ -1,12 +1,10 @@
-import win32api, win32con
+#import win32api, win32con
 import time
+import pyautogui
 
-def click():
-    
-    for i in range(720):
-        x = int(i*1.5)
-        y = i
-        win32api.SetCursorPos((x,y))
-        time.sleep(0.01)
-    
-click()
+try:
+    while True:
+        print pyautogui.position()
+
+except KeyboardInterrupt:
+    print('\n')

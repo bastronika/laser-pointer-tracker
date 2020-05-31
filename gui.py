@@ -7,18 +7,27 @@ import cv2
 import numpy as np
 from scipy.spatial import distance as dist
 import imutils
-#import pyautogui
-import win32api, win32con
+import pyautogui
+#import win32api, win32con
+
+from openpyxl import load_workbook
+
 
 class ColorDetector(QDialog):
     frame_counter = 0
     def __init__(self):
         super(ColorDetector, self).__init__()
         loadUi('tracking.ui', self)
+
+        self.file_name = 'data.xlsx'
+        self.wb = load_workbook(filename = self.file_name)
+        self.ws = self.wb.active
+        
         self.image = None
         self.mode = "corner"
         self.mouse_track = False
-        self.mouse_track_status.setText("idle") 
+        self.mouse_track_status.setText("idle")
+        self.count = 0 
 
         self.start_button.clicked.connect(self.start_webcam)
         self.stop_button.clicked.connect(self.stop_webcam)
@@ -28,13 +37,47 @@ class ColorDetector(QDialog):
         self.load_pointer.clicked.connect(self.load_data_pointer)
         self.track_button.clicked.connect(self.start_mouse_track)
         self.stop_track_button.clicked.connect(self.stop_mouse_track)
+        self.c_up.clicked.connect(self.push_up)
+        self.c_down.clicked.connect(self.push_down)
+        self.c_left.clicked.connect(self.push_left)
+        self.c_right.clicked.connect(self.push_right)
+        self.corner_adj_save.clicked.connect(self.push_save)
+        self.pushButton_reset.clicked.connect(self.push_reset)
+
+        self.ca1 = int(self.ws['A1'].value)
+        self.ca2 = int(self.ws['A2'].value)
+        self.ca3 = int(self.ws['A3'].value)
+
+        self.cb1 = int(self.ws['B1'].value)
+        self.cb2 = int(self.ws['B2'].value)
+        self.cb3 = int(self.ws['B3'].value)
+
+        self.cc1 = int(self.ws['C1'].value)
+        self.cc2 = int(self.ws['C2'].value)
+        self.cc3 = int(self.ws['C3'].value)
+
+        self.cd1 = int(self.ws['D1'].value)
+        self.cd2 = int(self.ws['D2'].value)
+        self.cd3 = int(self.ws['D3'].value)
+
+        self.ltx_adj = int(self.ws['E1'].value)
+        self.lty_adj = int(self.ws['F1'].value)
+
+        self.rtx_adj = int(self.ws['E2'].value)
+        self.rty_adj = int(self.ws['F2'].value)
+
+        self.brx_adj = int(self.ws['E3'].value)
+        self.bry_adj = int(self.ws['F3'].value)
+
+        self.blx_adj = int(self.ws['E4'].value)
+        self.bly_adj = int(self.ws['F4'].value)
 
 
-        self.corner_lower = np.array([0,0,131],np.uint8)
-        self.corner_upper = np.array([124,255,255],np.uint8)
+        self.corner_lower = np.array([self.ca1,self.ca2,self.ca3],np.uint8)
+        self.corner_upper = np.array([self.cb1,self.cb2,self.cb3],np.uint8)
 
-        self.pointer_lower = np.array([94,0,255],np.uint8)
-        self.pointer_upper = np.array([255,170,255],np.uint8)
+        self.pointer_lower = np.array([self.cc1,self.cc2,self.cc3],np.uint8)
+        self.pointer_upper = np.array([self.cd1,self.cd2,self.cd3],np.uint8)
 
         self.load_data_corner()
 
@@ -68,6 +111,91 @@ class ColorDetector(QDialog):
 
         self.h = None
 
+    def push_reset(self):
+
+        self.ltx_adj = 0
+        self.rtx_adj = 0
+        self.brx_adj = 0
+        self.blx_adj = 0
+
+        self.lty_adj = 0
+        self.rty_adj = 0
+        self.bry_adj = 0
+        self.bly_adj = 0
+
+        self.ws['E1'] = self.ltx_adj
+        self.ws['E2'] = self.rtx_adj
+        self.ws['E3'] = self.brx_adj
+        self.ws['E4'] = self.blx_adj
+
+        self.ws['F1'] = self.lty_adj
+        self.ws['F2'] = self.rty_adj
+        self.ws['F3'] = self.bry_adj
+        self.ws['F4'] = self.bly_adj
+
+        self.wb.save(self.file_name)
+
+    def push_save(self):
+        self.ws['E1'] = self.ltx_adj
+        self.ws['E2'] = self.rtx_adj
+        self.ws['E3'] = self.brx_adj
+        self.ws['E4'] = self.blx_adj
+
+        self.ws['F1'] = self.lty_adj
+        self.ws['F2'] = self.rty_adj
+        self.ws['F3'] = self.bry_adj
+        self.ws['F4'] = self.bly_adj
+
+        self.wb.save(self.file_name)
+
+    def push_up(self):
+        if self.corner_select.currentText() == "C1":
+            self.lty_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C2":
+            self.rty_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C3":
+            self.bry_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C4":
+            self.bly_adj -= int(self.corner_adj.currentText())
+
+        self.corner_adj_func()
+
+    def push_down(self):
+        if self.corner_select.currentText() == "C1":
+            self.lty_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C2":
+            self.rty_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C3":
+            self.bry_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C4":
+            self.bly_adj += int(self.corner_adj.currentText())
+        
+        self.corner_adj_func()
+
+    def push_left(self):
+        if self.corner_select.currentText() == "C1":
+            self.ltx_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C2":
+            self.rtx_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C3":
+            self.brx_adj -= int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C4":
+            self.blx_adj -= int(self.corner_adj.currentText())
+        
+        self.corner_adj_func()
+
+    def push_right(self):
+        if self.corner_select.currentText() == "C1":
+            self.ltx_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C2":
+            self.rtx_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C3":
+            self.brx_adj += int(self.corner_adj.currentText())
+        if self.corner_select.currentText() == "C4":
+            self.blx_adj += int(self.corner_adj.currentText())
+        
+        self.corner_adj_func()
+
     def start_mouse_track(self):
         self.mouse_track = True
         self.mouse_track_status.setText("Tracking") 
@@ -98,17 +226,7 @@ class ColorDetector(QDialog):
         self.s_max.setValue(self.pointer_upper[1])
         self.v_max.setValue(self.pointer_upper[2])
 
-    def set_corner(self):
-        self.corner_lower = np.array([self.h_min.value(), self.s_min.value(), self.v_min.value()],np.uint8)
-        self.corner_upper = np.array([self.h_max.value(), self.s_max.value(), self.v_max.value()],np.uint8)
-
-        self.h_min_corner.setText(str(self.corner_lower[0]))
-        self.s_min_corner.setText(str(self.corner_lower[1]))
-        self.v_min_corner.setText(str(self.corner_lower[2]))
-
-        self.h_max_corner.setText(str(self.corner_upper[0]))
-        self.s_max_corner.setText(str(self.corner_upper[1]))
-        self.v_max_corner.setText(str(self.corner_upper[2]))
+    def corner_adj_func(self):
 
         erode = cv2.erode(self.color_mask, None, iterations=2)
         dilate = cv2.dilate(erode,None, iterations=10)
@@ -123,6 +241,7 @@ class ColorDetector(QDialog):
 
         cx = [0,0,0,0]
         cy = [0,0,0,0]
+
         i_count = 0
 
         if np.any(corners == None):
@@ -199,14 +318,158 @@ class ColorDetector(QDialog):
                 rtx = cx[i]
                 rty = cy[i]
 
+        ltx += self.ltx_adj
+        lty += self.lty_adj
+
+        rtx += self.rtx_adj
+        rty += self.rty_adj
+
+        brx += self.brx_adj
+        bry += self.bry_adj
+
+        blx += self.blx_adj
+        bly += self.bly_adj
+
         self.a1 = ltx,lty
         self.a2 = rtx,rty
         self.a3 = brx,bry
         self.a4 = blx,bly
 
         pts_src = np.array([[ltx, lty], [rtx, rty], [brx, bry],[blx, bly]])
-        ##pts_dst = np.array([[10, 10],[1356, 10],[1356, 758],[10, 758]])
-        pts_dst = np.array([[10, 10],[1013, 10],[1013, 758],[10, 758]])
+        pts_dst = np.array([[0, 0],[1023, 0],[1023, 768],[0, 768]])
+        self.h, status = cv2.findHomography(pts_src, pts_dst)
+
+    def set_corner(self):
+        self.corner_lower = np.array([self.h_min.value(), self.s_min.value(), self.v_min.value()],np.uint8)
+        self.corner_upper = np.array([self.h_max.value(), self.s_max.value(), self.v_max.value()],np.uint8)
+
+        self.h_min_corner.setText(str(self.corner_lower[0]))
+        self.s_min_corner.setText(str(self.corner_lower[1]))
+        self.v_min_corner.setText(str(self.corner_lower[2]))
+
+        self.h_max_corner.setText(str(self.corner_upper[0]))
+        self.s_max_corner.setText(str(self.corner_upper[1]))
+        self.v_max_corner.setText(str(self.corner_upper[2]))
+
+        self.ws['A1'] = self.corner_lower[0]
+        self.ws['A2'] = self.corner_lower[1]
+        self.ws['A3'] = self.corner_lower[2]
+
+        self.ws['B1'] = self.corner_upper[0]
+        self.ws['B2'] = self.corner_upper[1]
+        self.ws['B3'] = self.corner_upper[2]
+
+        self.wb.save(self.file_name)
+
+        erode = cv2.erode(self.color_mask, None, iterations=2)
+        dilate = cv2.dilate(erode,None, iterations=10)
+        
+        kernelOpen = np.ones((5,5))
+        kernelClose = np.ones((20,20))
+        
+        maskOpen = cv2.morphologyEx(dilate, cv2.MORPH_OPEN, kernelOpen)
+        maskClose = cv2.morphologyEx(maskOpen, cv2.MORPH_CLOSE, kernelClose)
+     
+        corners = cv2.goodFeaturesToTrack(maskClose,4,0.01,150)
+
+        cx = [0,0,0,0]
+        cy = [0,0,0,0]
+
+        i_count = 0
+
+        if np.any(corners == None):
+            pass
+
+        else:
+            
+            corners = np.int0(corners)
+
+            for i in corners:
+                x,y = i.ravel()
+                #cv2.circle(img,(x,y),5,(0, 0, 255),-1)
+                cx[i_count]= x
+                cy[i_count]= y
+                i_count += 1
+
+        #img = cv2.drawContours(img, contours, -1, (0, 255, 0), 2)
+
+        c1 = cx[0],cy[0]
+        c2 = cx[1],cy[1]
+        c3 = cx[2],cy[2]
+        c4 = cx[3],cy[3]
+       
+        cs = [0,0,0,0]
+
+        for i in range(4):
+            cs[i] = cx[i] + cy[i]
+
+        csmin = cs[0]
+        csmax = cs[0]
+
+        ltx = cx[0]
+        lty = cy[0]
+
+        brx = cx[0]
+        bry = cy[0]
+
+        for i in range(4):
+            if csmin > cs[i]:
+                csmin = cs[i]
+                ltx = cx[i]
+                lty = cy[i]
+        
+        for i in range(4):
+            if csmax < cs[i]:
+                csmax = cs[i]
+                brx = cx[i]
+                bry = cy[i]
+        
+        cd = [0,0,0,0]
+
+        for i in range(4):
+            cd[i] = cx[i] - cy[i]
+
+        cdmin = cd[0]
+        cdmax = cd[0]
+
+        rtx = cx[0]
+        rty = cy[0]
+
+        blx = cx[0]
+        bly = cy[0]
+
+
+        for i in range(4):
+            if cdmin > cd[i]:
+                cdmin = cd[i]
+                blx = cx[i]
+                bly = cy[i]
+        
+        for i in range(4):
+            if cdmax < cd[i]:
+                cdmax = cd[i]
+                rtx = cx[i]
+                rty = cy[i]
+
+        ltx += self.ltx_adj
+        lty += self.lty_adj
+
+        rtx += self.rtx_adj
+        rty += self.rty_adj
+
+        brx += self.brx_adj
+        bry += self.bry_adj
+
+        blx += self.blx_adj
+        bly += self.bly_adj
+
+        self.a1 = ltx,lty
+        self.a2 = rtx,rty
+        self.a3 = brx,bry
+        self.a4 = blx,bly
+
+        pts_src = np.array([[ltx, lty], [rtx, rty], [brx, bry],[blx, bly]])
+        pts_dst = np.array([[0, 0],[1023, 0],[1023, 768],[0, 768]])
         self.h, status = cv2.findHomography(pts_src, pts_dst)
 
     def set_pointer(self):
@@ -220,6 +483,17 @@ class ColorDetector(QDialog):
         self.h_max_pointer.setText(str(self.pointer_upper[0]))
         self.s_max_pointer.setText(str(self.pointer_upper[1]))
         self.v_max_pointer.setText(str(self.pointer_upper[2]))
+
+        self.ws['C1'] = self.pointer_lower[0]
+        self.ws['C2'] = self.pointer_lower[1]
+        self.ws['C3'] = self.pointer_lower[2]
+
+        self.ws['D1'] = self.pointer_upper[0]
+        self.ws['D2'] = self.pointer_upper[1]
+        self.ws['D3'] = self.pointer_upper[2]
+
+        self.wb.save(self.file_name)
+
          
     def start_webcam(self):
         if self.cameraSelect.currentText() == "0" or self.cameraSelect.currentText() == "1" or self.cameraSelect.currentText() == "2":
@@ -306,16 +580,25 @@ class ColorDetector(QDialog):
                 
                 xt = int(transformed[0][0][0])
                 yt = int(transformed[0][0][1])
+
+                self.count += 1
+                self.last_xt = xt
+                self.last_yt = yt
             
             else:
+                if self.count > 1 and self.count < 50:
+                    pyautogui.click(x = self.last_xt, y = self.last_xt, click = 2, interval = 0.25)
+                    
                 xt = 0
                 yt = 0
+                self.count = 0
 
-            self.mouse_pointer_val.setText(str((xt+1366,yt)))
 
-            if self.mouse_track == True and xt > 0 and xt < 768 and yt > 0 and yt < 1368:
-                #pyautogui.moveTo(xt,yt)
-                win32api.SetCursorPos((xt+1366,yt))
+            self.mouse_pointer_val.setText(str((2389-xt,yt)))
+
+            if self.mouse_track == True and xt > 0 and xt < 1366 and yt > 0 and yt < 768:
+                pyautogui.moveTo(2389-xt,yt)
+                #win32api.SetCursorPos((xt+1366,yt))
 
         return img
         
