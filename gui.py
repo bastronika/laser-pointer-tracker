@@ -586,19 +586,18 @@ class ColorDetector(QDialog):
                 self.last_yt = yt
             
             else:
-                if self.count > 1 and self.count < 50:
+                if self.count > 1 and self.count < 50 and self.mouse_track == True and xt > 0 and xt < 1366 and yt > 0 and yt < 768:
                     pyautogui.click(x = self.last_xt, y = self.last_xt, click = 2, interval = 0.25)
                     
                 xt = 0
                 yt = 0
                 self.count = 0
 
-
             self.mouse_pointer_val.setText(str((2389-xt,yt)))
 
             if self.mouse_track == True and xt > 0 and xt < 1366 and yt > 0 and yt < 768:
                 pyautogui.moveTo(2389-xt,yt)
-                #win32api.SetCursorPos((xt+1366,yt))
+                #win32api.SetCursorPos((2389-xt,yt))
 
         return img
         
