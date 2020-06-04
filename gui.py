@@ -9,9 +9,9 @@ from scipy.spatial import distance as dist
 import imutils
 import pyautogui
 #import win32api, win32con
+#from win32api import GetSystemMetrics
 
 from openpyxl import load_workbook
-
 
 class ColorDetector(QDialog):
     frame_counter = 0
@@ -23,6 +23,11 @@ class ColorDetector(QDialog):
         self.wb = load_workbook(filename = self.file_name)
         self.ws = self.wb.active
         
+        self.screenWidth = GetSystemMetrics(0)
+        self.screenHeight = GetSystemMetrics(1)
+        self.screenOrigin = 1366
+        self.screenExtends = self.screenWidth - self.screenOrigin
+
         self.image = None
         self.mode = "corner"
         self.mouse_track = False
@@ -336,7 +341,7 @@ class ColorDetector(QDialog):
         self.a4 = blx,bly
 
         pts_src = np.array([[ltx, lty], [rtx, rty], [brx, bry],[blx, bly]])
-        pts_dst = np.array([[0, 0],[1023, 0],[1023, 768],[0, 768]])
+        pts_dst = np.array([[0, 0],[self.screenExtends, 0],[self.screenExtends, self.screenHeight],[0, self.screenHeight]])
         self.h, status = cv2.findHomography(pts_src, pts_dst)
 
     def set_corner(self):
@@ -469,7 +474,8 @@ class ColorDetector(QDialog):
         self.a4 = blx,bly
 
         pts_src = np.array([[ltx, lty], [rtx, rty], [brx, bry],[blx, bly]])
-        pts_dst = np.array([[0, 0],[1023, 0],[1023, 768],[0, 768]])
+        #pts_dst = np.array([[0, 0],[1023, 0],[1023, 768],[0, 768]])
+        pts_dst = np.array([[0, 0],[self.screenExtends, 0],[self.screenExtends, self.screenHeight],[0, self.screenHeight]])
         self.h, status = cv2.findHomography(pts_src, pts_dst)
 
     def set_pointer(self):
@@ -586,17 +592,17 @@ class ColorDetector(QDialog):
                 self.last_yt = yt
             
             else:
-                if self.count > 1 and self.count < 50 and self.mouse_track == True and xt > 0 and xt < 1366 and yt > 0 and yt < 768:
+                if self.count > 1 and self.count < 50 and self.mouse_track == True and xt > 0 and xt < self.screenExtends and yt > 0 and yt < self.screenHeight:
                     pyautogui.click(x = self.last_xt, y = self.last_xt, click = 2, interval = 0.25)
                     
                 xt = 0
                 yt = 0
                 self.count = 0
 
-            self.mouse_pointer_val.setText(str((2389-xt,yt)))
+            self.mouse_pointer_val.setText(str((self.screenWidth-xt,yt)))
 
-            if self.mouse_track == True and xt > 0 and xt < 1366 and yt > 0 and yt < 768:
-                pyautogui.moveTo(2389-xt,yt)
+            if self.mouse_track == True and xt > 0 and xt < self.screenExtends and yt > 0 and yt < self.screenHeight:
+                pyautogui.moveTo(self.screenWidth-xt,yt)
                 #win32api.SetCursorPos((2389-xt,yt))
 
         return img
